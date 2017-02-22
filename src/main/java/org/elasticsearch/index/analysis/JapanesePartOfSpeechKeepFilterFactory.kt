@@ -14,36 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.index.analysis;
+package org.elasticsearch.index.analysis
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ja.JapanesePartOfSpeechKeepFilter;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream
+import org.apache.lucene.analysis.ja.JapanesePartOfSpeechKeepFilter
+import org.apache.lucene.analysis.util.TokenFilterFactory
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.HashSet
 
-public class JapanesePartOfSpeechKeepFilterFactory extends TokenFilterFactory {
-    private Set<String> keepTags = new HashSet<>();
+class JapanesePartOfSpeechKeepFilterFactory
+/**
+ * Creates a new JapanesePartOfSpeechKeepFilterFactory
+ */
+(args: Map<String, String>, posTags: List<String>) : TokenFilterFactory(args) {
+    private val keepTags = HashSet<String>()
 
-    /**
-     * Creates a new JapanesePartOfSpeechKeepFilterFactory
-     */
-    public JapanesePartOfSpeechKeepFilterFactory(Map<String, String> args, List<String> posTags) {
-        super(args);
-        keepTags.addAll(posTags);
+    init {
+        keepTags.addAll(posTags)
     }
 
-    @Override
-    public TokenStream create(TokenStream stream) {
+    override fun create(stream: TokenStream): TokenStream {
         // if keeptags is null, it means the file is empty
         if (keepTags != null) {
-            final TokenStream filter = new JapanesePartOfSpeechKeepFilter(stream, keepTags);
-            return filter;
+            val filter = JapanesePartOfSpeechKeepFilter(stream, keepTags)
+            return filter
         } else {
-            return stream;
+            return stream
         }
     }
 }

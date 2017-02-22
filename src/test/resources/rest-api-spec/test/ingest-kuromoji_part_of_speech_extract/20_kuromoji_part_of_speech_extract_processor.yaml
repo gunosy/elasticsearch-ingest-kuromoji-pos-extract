@@ -32,5 +32,5 @@
         type: test
         id: 1
   - match: { _source.field1: "今日は友達と渋谷でランチを食べた。" }
-  - match: { _source.field2: ["友達", "渋谷", "ランチ"] }
+  - match: { _source.field2: [{"word": "友達"}, {"word": "渋谷"}, {"word": "ランチ"}] }
 

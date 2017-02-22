@@ -3,10 +3,14 @@ buildscript {
         mavenLocal()
         mavenCentral()
         jcenter()
+        maven { url 'http://dl.bintray.com/kotlin/kotlin-eap-1.1' }
     }
 
+    ext.kotlin_version = '1.1.0-rc-91'
+
     dependencies {
-        classpath "org.elasticsearch.gradle:build-tools:5.0.0-alpha4"
+        classpath "org.elasticsearch.gradle:build-tools:5.2.1"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
@@ -20,12 +24,13 @@ repositories {
 }
 
 group = 'org.elasticsearch.plugin.ingest'
-version = '0.0.1-SNAPSHOT'
+version = '1.0.0'
 
 apply plugin: 'java'
+apply plugin: "kotlin"
 apply plugin: 'elasticsearch.esplugin'
-apply plugin: 'com.bmuschko.nexus'
 apply plugin: 'idea'
+
 
 esplugin {
     name 'ingest-kuromoji_part_of_speech_extract'
@@ -37,10 +42,20 @@ esplugin {
 // Note, the two dependencies are not really needed as the buildscript dependency gets them in already
 // they are just here as an example
 dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     compile "org.elasticsearch:elasticsearch:${versions.elasticsearch}"
-    compile "org.codelibs:lucene-analyzers-kuromoji-ipadic-neologd:6.1.0-20160714"
+    compile "org.codelibs:lucene-analyzers-kuromoji-ipadic-neologd:6.4.1-20170213"
 
     testCompile "org.elasticsearch.test:framework:${versions.elasticsearch}"
+    compile "org.jetbrains.kotlin:kotlin-stdlib-js:$kotlin_version"
+}
+
+allprojects {
+    repositories {
+        jcenter()
+        maven { url 'http://dl.bintray.com/kotlin/kotlin-eap-1.1' }
+    }
 }
 
 // Uncomment to not use elasticsearch checkstyle rules
