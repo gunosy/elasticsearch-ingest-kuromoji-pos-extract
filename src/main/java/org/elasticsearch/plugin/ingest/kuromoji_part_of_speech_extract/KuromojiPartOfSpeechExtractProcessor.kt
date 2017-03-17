@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory
 import org.apache.lucene.analysis.util.TokenizerFactory
 import org.codelibs.neologd.ipadic.lucene.analysis.ja.JapaneseTokenizer
 import org.codelibs.neologd.ipadic.lucene.analysis.ja.JapaneseTokenizerFactory
+import org.codelibs.neologd.ipadic.lucene.analysis.ja.tokenattributes.BaseFormAttribute
 import org.elasticsearch.common.Strings
 import org.elasticsearch.index.analysis.JapanesePartOfSpeechKeepFilterFactory
 import org.elasticsearch.ingest.AbstractProcessor
@@ -38,6 +39,9 @@ import java.lang.*
 
 import org.elasticsearch.ingest.ConfigurationUtils.readList
 import org.elasticsearch.ingest.ConfigurationUtils.readStringProperty
+import org.elasticsearch.common.logging.ESLoggerFactory
+
+
 
 class KuromojiPartOfSpeechExtractProcessor @Throws(IOException::class)
 constructor(tag: String, private val field: String, private val targetField: String, private val posTags: List<String>) : AbstractProcessor(tag) {
@@ -45,11 +49,11 @@ constructor(tag: String, private val field: String, private val targetField: Str
     private val kuromojiAnalyzer: Analyzer
 
     init {
-        this.kuromojiAnalyzer = loadAnalyzer(posTags)
+        this.kuromojiAnalyzer = loadAnalyzer()
     }
 
     // TODO should refactor to allow user to specify settings more
-    private fun loadAnalyzer(posTags: List<String>): Analyzer {
+    private fun loadAnalyzer(): Analyzer {
         val tokenizerOptions = HashMap<String, String>()
         tokenizerOptions.put("mode", JapaneseTokenizer.Mode.NORMAL.toString())
         val tokenizerFactory = JapaneseTokenizerFactory(tokenizerOptions)
@@ -57,7 +61,7 @@ constructor(tag: String, private val field: String, private val targetField: Str
         tokenFilterFactories[0] = JapanesePartOfSpeechKeepFilterFactory(HashMap<String, String>(), this.posTags)
 
         val analyzer = object : Analyzer() {
-            protected override fun createComponents(s: String): TokenStreamComponents {
+            override fun createComponents(s: String): TokenStreamComponents {
                 val tokenizer = tokenizerFactory.create()
                 var tokenStream: TokenStream = tokenizer
                 for (tokenFilterFactory in tokenFilterFactories) {
@@ -73,6 +77,7 @@ constructor(tag: String, private val field: String, private val targetField: Str
     @Throws(Exception::class)
     override fun execute(ingestDocument: IngestDocument) {
         val content = ingestDocument.getFieldValue(field, String::class.java)
+
         // tokenizer with part-of-speech
         val filteredTokens = ArrayList<Map<String,String>>()
         if (Strings.isNullOrEmpty(content) === false) {
@@ -80,12 +85,14 @@ constructor(tag: String, private val field: String, private val targetField: Str
                 tokens.reset()
                 val termAttr = tokens.getAttribute(CharTermAttribute::class.java)
                 while (tokens.incrementToken()) {
-                    val map = mapOf("word" to termAttr.toString())
-                    filteredTokens.add(map)
+                    if (tokens.getAttribute(BaseFormAttribute::class.java).baseForm == null) {
+                        val map = mapOf("word" to termAttr.toString())
+                        filteredTokens.add(map)
+                    }
                 }
                 tokens.end()
 
-                ingestDocument.setFieldValue(targetField, filteredTokens)
+                ingestDocument.appendFieldValue(targetField, filteredTokens)
             })
         }
     }
