@@ -42,12 +42,17 @@ class KuromojiPartOfSpeechExtractProcessorTests : ESTestCase() {
         posTags.add("名詞-固有名詞-地域-一般")
         posTags.add("名詞-一般")
 
-        val processor = KuromojiPartOfSpeechExtractProcessor(ESTestCase.randomAsciiOfLength(10), "source_field", "target_field", posTags)
+        val processor = KuromojiPartOfSpeechExtractProcessor(ESTestCase.randomAsciiOfLength(10), "source_field", "target_field", posTags, 1.0)
         processor.execute(ingestDocument)
 
         Assert.assertThat(ingestDocument.hasField("target_field"), notNullValue())
         Assert.assertThat(ingestDocument.getFieldValue<List<Map<String,String>>>("target_field", javaClass<List<Map<String,String>>>()),
-                equalTo<List<Map<String,String>>>(Arrays.asList(mapOf("word" to "友達"), mapOf("word" to "渋谷"), mapOf("word" to "ランチ"))))
+                equalTo<List<Map<String,Any>>>(
+                        Arrays.asList(
+                                mapOf("word" to "友達", "score" to 1.0),
+                                mapOf("word" to "渋谷", "score" to 1.0),
+                                mapOf("word" to "ランチ", "score" to 1.0)
+                        )))
     }
     inline fun <reified T: Any> javaClass(): Class<T> = T::class.java
 

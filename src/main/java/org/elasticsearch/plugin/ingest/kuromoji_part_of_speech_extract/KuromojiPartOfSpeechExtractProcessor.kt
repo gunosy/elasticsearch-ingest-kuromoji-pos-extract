@@ -37,14 +37,18 @@ import java.util.ArrayList
 import java.util.HashMap
 import java.lang.*
 
-import org.elasticsearch.ingest.ConfigurationUtils.readList
-import org.elasticsearch.ingest.ConfigurationUtils.readStringProperty
 import org.elasticsearch.common.logging.ESLoggerFactory
-
+import org.elasticsearch.ingest.ConfigurationUtils.*
 
 
 class KuromojiPartOfSpeechExtractProcessor @Throws(IOException::class)
-constructor(tag: String, private val field: String, private val targetField: String, private val posTags: List<String>) : AbstractProcessor(tag) {
+constructor(
+        tag: String,
+        private val field: String,
+        private val targetField: String,
+        private val posTags: List<String>,
+        private val score: Double
+) : AbstractProcessor(tag) {
 
     private val kuromojiAnalyzer: Analyzer
 
@@ -79,14 +83,14 @@ constructor(tag: String, private val field: String, private val targetField: Str
         val content = ingestDocument.getFieldValue(field, String::class.java)
 
         // tokenizer with part-of-speech
-        val filteredTokens = ArrayList<Map<String,String>>()
+        val filteredTokens = ArrayList<Map<String,Any>>()
         if (Strings.isNullOrEmpty(content) === false) {
             this.kuromojiAnalyzer.tokenStream("field", content).use({ tokens ->
                 tokens.reset()
                 val termAttr = tokens.getAttribute(CharTermAttribute::class.java)
                 while (tokens.incrementToken()) {
                     if (tokens.getAttribute(BaseFormAttribute::class.java).baseForm == null) {
-                        val map = mapOf("word" to termAttr.toString())
+                        val map = mapOf("word" to termAttr.toString(), "score" to this.score)
                         filteredTokens.add(map)
                     }
                 }
@@ -105,13 +109,14 @@ constructor(tag: String, private val field: String, private val targetField: Str
 
         @Throws(Exception::class)
         override fun create(factories: Map<String, Processor.Factory>,
-                   processorTag: String?, config: Map<String, Any>): KuromojiPartOfSpeechExtractProcessor {
+                   processorTag: String?, config: MutableMap<String, Any>): KuromojiPartOfSpeechExtractProcessor {
             val field = readStringProperty(TYPE, processorTag, config, "field")
             val targetField = readStringProperty(TYPE, processorTag, config, "target_field", "default_field_name")
-
             val posTags = readList<String>(TYPE, processorTag, config, "pos_tags")
+            val score = config.remove("score") as? Double ?: 1.0
+            //val score = readStringProperty(TYPE, processorTag, config, "score", "1.0").toDouble()
 
-            return KuromojiPartOfSpeechExtractProcessor(processorTag.toString(), field, targetField, posTags)
+            return KuromojiPartOfSpeechExtractProcessor(processorTag.toString(), field, targetField, posTags, score)
         }
     }
 
